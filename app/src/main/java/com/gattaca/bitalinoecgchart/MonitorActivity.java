@@ -1,8 +1,15 @@
 package com.gattaca.bitalinoecgchart;
 
+import android.content.Intent;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+
+import com.github.mikephil.charting.listener.ChartTouchListener;
+import com.github.mikephil.charting.listener.OnChartGestureListener;
 
 public class MonitorActivity extends AppCompatActivity {
 
@@ -22,6 +29,23 @@ public class MonitorActivity extends AppCompatActivity {
 
         bitalino = new BitalinoUniversal(this, 2);
         startBitalinoThread = bitalino.start();
+
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean isPause = chart.getPause();
+                if (isPause) {
+                    fab.setImageDrawable(getDrawable(R.drawable.pause));
+                } else {
+                    fab.setImageDrawable(getDrawable(R.drawable.play));
+                }
+
+                chart.setPause(!isPause);
+            }
+        });
 
         Thread realTimeThread = new Thread(new Runnable() {
             SimpleECG currentECG = null;
@@ -62,4 +86,6 @@ public class MonitorActivity extends AppCompatActivity {
         });
         realTimeThread.start();
     }
+
+
 }
