@@ -15,6 +15,8 @@ public class MonitorActivity extends NaviagableActivity {
     Thread startBitalinoThread = null;
     static final int PERIOD = 100;
     static final String TAG = MonitorActivity.class.getSimpleName();
+    boolean fab_state;
+    ChartAdapter currentChartAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,25 +40,30 @@ public class MonitorActivity extends NaviagableActivity {
         bitalino = new BitalinoUniversal(this, 2);
         startBitalinoThread = bitalino.start();
 
-        SinDevice sinDevice = new SinDevice(100);
-        final ChartAdapter currentChartAdapter = new ChartAdapter(chart, sinDevice, this);
+        currentChartAdapter = new ChartAdapter(chart, this);
+        SinDevice sinDevice = new SinDevice(100, currentChartAdapter);
 
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
         assert fab != null;
+
+        fab_state = true;
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean isRealTime = currentChartAdapter.getRealTime();
-                if (!isRealTime) {
-                    fab.setImageDrawable(getDrawable(R.drawable.pause));
+                if (!fab_state) {
                     currentChartAdapter.moveRealTime();
+                    fab.setImageDrawable(getDrawable(R.drawable.pause));
                 } else {
-                    currentChartAdapter.setRealTime(false);
+                    currentChartAdapter.pause();
                     fab.setImageDrawable(getDrawable(R.drawable.play));
                 }
+                fab_state = !fab_state;
             }
         });
+
+        currentChartAdapter.start();
 
         /*Thread realTimeThread = new Thread(new Runnable() {
             SimpleECG currentECG = null;
@@ -96,7 +103,6 @@ public class MonitorActivity extends NaviagableActivity {
             }
         });
         realTimeThread.start();*/
-        currentChartAdapter.start();
     }
 
 

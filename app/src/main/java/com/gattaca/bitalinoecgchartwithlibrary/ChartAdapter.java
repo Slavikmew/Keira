@@ -3,6 +3,7 @@ package com.gattaca.bitalinoecgchartwithlibrary;
 import android.app.Activity;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by vadub on 18.08.2016.
@@ -11,36 +12,15 @@ public class ChartAdapter {
     private RealTimeChart chart;
     public static final int FPS = 60;
     Thread changeChartThread;
-    Device device;
     Activity UIThreadActivity;
-    private boolean isRealTime = true;
-    private float moveXto;
-    boolean alreadyMove;
+    ArrayList<Float> updateData;
+    MoveManager moveManager;
 
-    synchronized public boolean getRealTime() {
-        return isRealTime;
-    }
-    synchronized public void setRealTime(boolean value) {
-        isRealTime = value;
-    }
-    synchronized public boolean getAlreadyMove() {
-        return alreadyMove;
-    }
-    synchronized public void setAlreadyMove(boolean value) {
-        alreadyMove = value;
-    }
-    synchronized public float getMoveXto() {
-        return moveXto;
-    }
-    synchronized public void setMoveXto(float initMoveXto) {
-        moveXto = initMoveXto;
-    }
-
-    ChartAdapter(RealTimeChart realTimeChart, Device d, Activity activity) {
+    ChartAdapter(RealTimeChart realTimeChart, Activity activity) {
         chart = realTimeChart;
-        device = d;
+        updateData = new ArrayList<Float>();
         UIThreadActivity = activity;
-        moveXto = Float.MAX_VALUE;
+        moveManager = new MoveManager();
     }
 
     class UpdateRunnable implements Runnable {
@@ -48,73 +28,120 @@ public class ChartAdapter {
         float moveXto;
 
         UpdateRunnable(ArrayList<Float> currentData, float MoveXto) {
-            data = currentData;
+            data = new ArrayList<Float>();
+            for (Float item: currentData) {
+                if (item != null) {
+                    data.add(item);
+                }
+            }
             moveXto = MoveXto;
         }
 
         @Override
         public void run() {
-            chart.addData(data, getRealTime(), moveXto);
+            chart.addData(new ArrayList<Float>(data), moveXto);
         }
     }
 
-    private class MoveTask implements Runnable {
-        float startPosition, finalPosition;
-        static final int scrollFrequency = 1000;
+    synchronized public void push_back(Float value) {
+        updateData.add(value);
+    }
 
-        MoveTask(float startPosition, float position) {
-            finalPosition = position;
+    int getChartSize() {
+        return chart.size();
+    }
+
+    private class MoveManager implements Runnable {
+        private float currentPosition, finalPosition, actualPosition;
+        static final int MAXIMAL_SPEED = 1000;
+        static final int MINIMUM_SPEED = 200;
+
+        MoveManager() {
+            currentPosition = actualPosition = getChartSize() - chart.VISIBLE_NUM;
+            finalPosition = Float.MAX_VALUE;
         }
+
+        synchronized void setCurrentPosition(Float initCurrentPosition) {
+            currentPosition = initCurrentPosition;
+        }
+
+        synchronized void setFinalPosition(Float initFinalPosition) {
+            finalPosition = initFinalPosition;
+        }
+
+        synchronized void setActualPosition(Float initActualPosition) {
+            actualPosition = initActualPosition;
+        }
+
+        synchronized Float getCurrentPosition() {
+            return currentPosition;
+        }
+
+        synchronized Float getFinalPosition() {
+            return finalPosition;
+        }
+
+        synchronized Float getActualPosition() {
+            return actualPosition;
+        }
+
 
         @Override
         public void run() {
-            setAlreadyMove(true);
-            float currentPosition = startPosition;
             while(true) {
-                if (Math.abs(currentPosition - Math.min(finalPosition, chart.size())) < 1e-9) {
-                    break;
+                long distance = 0;
+                synchronized (this) {
+                    if (Math.abs(currentPosition - Math.min(finalPosition, chart.size() - chart.VISIBLE_NUM)) > 1e-9) {
+                        if (currentPosition < Math.min(finalPosition, actualPosition)) {
+                            currentPosition = Math.min(finalPosition, actualPosition);
+                        }
+                        if (currentPosition > Math.max(finalPosition, actualPosition)) {
+                            currentPosition = Math.max(finalPosition, actualPosition);
+                        }
+                        if (currentPosition < finalPosition) {
+                            currentPosition++;
+                        } else {
+                            currentPosition--;
+                        }
+                    }
+                    distance = (long) Math.abs(currentPosition - Math.min(finalPosition, chart.size() - chart.VISIBLE_NUM));
                 }
-                if (currentPosition < finalPosition) {
-                    currentPosition++;
-                } else {
-                    currentPosition--;
-                }
-                setMoveXto(currentPosition);
-                long waitUntil = System.nanoTime() + 1000000000 / scrollFrequency;
-                while(waitUntil > System.nanoTime());
-            }
-            setAlreadyMove(false);
-            if (finalPosition == Float.MAX_VALUE) {
-                setRealTime(true);
+                EffectiveSleep.sleepNanoseconds(1000000000 / Math.max(MINIMUM_SPEED, Math.min(MAXIMAL_SPEED, distance)));
             }
         }
     }
 
-    public boolean move(float finalX) {
-        if (getAlreadyMove())
-            return false;
-        new Thread(new MoveTask(chart.getViewX(), finalX)).start();
-        return true;
+    public void move(float finalX) {
+        moveManager.setFinalPosition(finalX);
     }
 
-    public boolean moveRealTime() {
-        return move(Float.MAX_VALUE);
+    public void pause() {
+        move(moveManager.getActualPosition());
+    }
+
+    public void moveRealTime() {
+        move(Float.MAX_VALUE);
+    }
+
+    class FPSChanger implements Runnable {
+        @Override
+        public void run() {
+            while(true) {
+                synchronized (ChartAdapter.this) {
+                    float newView = moveManager.getCurrentPosition();
+                    UpdateRunnable currentRunnable = new UpdateRunnable(updateData, newView);
+                    UIThreadActivity.runOnUiThread(currentRunnable);
+                    updateData.clear();
+                    moveManager.setActualPosition(newView);
+                }
+                EffectiveSleep.sleepNanoseconds(1000000000 / FPS);
+            }
+        }
     }
 
     public void start() {
-        changeChartThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int cur = 0;
-                while(true) {
-                    ArrayList<Float> currentData = device.get();
-                    UpdateRunnable currentRunnable = new UpdateRunnable(currentData, moveXto);
-                    UIThreadActivity.runOnUiThread(currentRunnable);
-                    long waitUntil = System.nanoTime() + 1000000000 / FPS;
-                    while(waitUntil > System.nanoTime());
-                }
-            }
-        });
+        new Thread(moveManager).start();
+        changeChartThread = new Thread(new FPSChanger());
         changeChartThread.start();
     }
 }

@@ -18,7 +18,7 @@ public class RealTimeChart  implements OnChartGestureListener {
     private LineChart mChart;
     MonitorActivity mActivity;
     static final float CHART_WIDTH = 4;
-    private static final int VISIBLE_NUM = 300;
+    public static final int VISIBLE_NUM = 300;
 
     public RealTimeChart(MonitorActivity monitorActivity) {
         mActivity = monitorActivity;
@@ -112,7 +112,7 @@ public class RealTimeChart  implements OnChartGestureListener {
         mChart.postInvalidate();
     }
 
-    synchronized public void addData(ArrayList<Float> values, boolean isRealTime, float moveXto) {
+    synchronized public void addData(ArrayList<Float> values, float moveXto) {
         LineData data = mChart.getData();
         LineDataSet set = (LineDataSet)data.getDataSetByIndex(0);
 
@@ -127,20 +127,13 @@ public class RealTimeChart  implements OnChartGestureListener {
         for (float value: values) {
             data.addEntry(new Entry(set.getEntryCount(), value), 0);
         }
-        if (isRealTime) {
-            mChart.moveViewToX(set.getEntryCount() - VISIBLE_NUM);
-            Log.i("LeftXSetTo: ", Integer.toString(set.getEntryCount() - VISIBLE_NUM));
-        } else if (moveXto != Float.MAX_VALUE){
-            mChart.moveViewToX(moveXto);
-            Log.i("LeftXSetTo: ", Float.toString(moveXto));
-        }
+
+
+        mChart.moveViewToX(moveXto);
+
         mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
         mChart.notifyDataSetChanged();
         //mChart.postInvalidate();
-    }
-
-    synchronized float getViewX() {
-        return mChart.getLowestVisibleX();
     }
 
     synchronized int size() {
