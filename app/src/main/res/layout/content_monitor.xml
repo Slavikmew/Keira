@@ -8,10 +8,10 @@
     tools:context=".MonitorActivity"
     tools:showIn="@layout/activity_monitor">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/root_layout"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:text="@string/large_text" />
+        android:layout_width="fill_parent"
+        android:orientation="vertical"/>
 
 </android.support.v4.widget.NestedScrollView>

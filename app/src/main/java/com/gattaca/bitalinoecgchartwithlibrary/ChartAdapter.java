@@ -1,8 +1,10 @@
 package com.gattaca.bitalinoecgchartwithlibrary;
 
 import android.app.Activity;
+import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -12,15 +14,17 @@ public class ChartAdapter {
     private RealTimeChart chart;
     public static final int FPS = 60;
     Thread changeChartThread;
-    Activity UIThreadActivity;
+    MonitorActivity UIThreadActivity;
     ArrayList<Float> updateData;
     MoveManager moveManager;
+    Random myRandom;
 
-    ChartAdapter(RealTimeChart realTimeChart, Activity activity) {
+    ChartAdapter(RealTimeChart realTimeChart, MonitorActivity activity) {
         chart = realTimeChart;
         updateData = new ArrayList<Float>();
         UIThreadActivity = activity;
         moveManager = new MoveManager();
+        myRandom = new Random(171717);
     }
 
     class UpdateRunnable implements Runnable {
@@ -39,7 +43,13 @@ public class ChartAdapter {
 
         @Override
         public void run() {
-            chart.addData(new ArrayList<Float>(data), moveXto);
+            boolean isEvent = false;
+            if (data.size() > 0 && myRandom.nextInt(500) == 0) {
+                UIThreadActivity.eventsAdapter.add_event(getChartSize());
+                Log.i(ChartAdapter.class.getSimpleName(), Float.toString(data.get(0)));
+                isEvent = true;
+            }
+            chart.addData(new ArrayList<Float>(data), moveXto, isEvent);
         }
     }
 

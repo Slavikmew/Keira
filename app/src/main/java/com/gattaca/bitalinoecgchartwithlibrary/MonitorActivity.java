@@ -1,12 +1,23 @@
 package com.gattaca.bitalinoecgchartwithlibrary;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.support.design.widget.FloatingActionButton;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.gattaca.bitalinoecgchartwithlibrary.navigation.NaviagableActivity;
+
+import java.util.ArrayList;
 
 public class MonitorActivity extends NaviagableActivity {
 
@@ -17,6 +28,10 @@ public class MonitorActivity extends NaviagableActivity {
     static final String TAG = MonitorActivity.class.getSimpleName();
     boolean fab_state;
     ChartAdapter currentChartAdapter;
+    public EventsAdapter eventsAdapter;
+    LinearLayout EventsLayout;
+    LinearLayout.LayoutParams layoutParams;
+    FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +39,11 @@ public class MonitorActivity extends NaviagableActivity {
         getLayoutInflater().inflate(R.layout.activity_monitor, frameLayout);
 
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar_monitor);
+
+        EventsLayout = (LinearLayout) findViewById(R.id.root_layout);
+        layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        layoutParams.setMargins(30, 20, 30, 0);
+
         //toolbar.setTitleTextColor(getColor(R.color.colorPrimary));
         //toolbar.setSubtitleTextColor(getColor(R.color.colorPrimary));
         //toolbar.setBackgroundColor(getColor(R.color.colorPrimary));
@@ -35,15 +55,18 @@ public class MonitorActivity extends NaviagableActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         chart = new RealTimeChart(this);
+        eventsAdapter = new EventsAdapter(this);
+
         chart.init();
 
-        bitalino = new BitalinoUniversal(this, 2);
-        startBitalinoThread = bitalino.start();
+
+        /*bitalino = new BitalinoUniversal(this, 2);
+        startBitalinoThread = bitalino.start();*/
 
         currentChartAdapter = new ChartAdapter(chart, this);
         SinDevice sinDevice = new SinDevice(100, currentChartAdapter);
 
-        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
 
         assert fab != null;
 
@@ -105,5 +128,20 @@ public class MonitorActivity extends NaviagableActivity {
         realTimeThread.start();*/
     }
 
+    void addButton(Float position) {
+        Button button = (Button)getLayoutInflater().inflate(R.layout.monitor_list_element, null);
+        button.setText(Float.toString(position));
+        button.setId(eventsAdapter.getEventsSize() - 1);
 
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                currentChartAdapter.move(eventsAdapter.get_event(view.getId()) - chart.VISIBLE_NUM / 2);
+                fab_state = false;
+                fab.setImageDrawable(getDrawable(R.drawable.play));
+            }
+        });
+
+        EventsLayout.addView(button, layoutParams);
+    }
 }

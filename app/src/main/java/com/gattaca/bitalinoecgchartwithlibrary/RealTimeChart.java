@@ -1,6 +1,10 @@
 package com.gattaca.bitalinoecgchartwithlibrary;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -54,6 +58,10 @@ public class RealTimeChart  implements OnChartGestureListener {
 
         mChart.setBackgroundColor(Color.WHITE);
 
+       /*Bitmap bm = BitmapFactory.decodeResource(mActivity.getResources(), R.drawable.net_upper_gradient);
+        Drawable background = new BitmapDrawable(mActivity.getResources(), bm);
+        mChart.setBackground(background);*/
+
         LineData data = new LineData();
         data.setValueTextColor(Color.BLACK);
 
@@ -88,6 +96,7 @@ public class RealTimeChart  implements OnChartGestureListener {
         rightAxis.setEnabled(false);*/
         //mChart.setEnabled(false);
         data.addDataSet(createSet());
+        data.addDataSet(createEventSet());
     }
 
     synchronized public void addData(float value, boolean isRealTime) {
@@ -112,7 +121,7 @@ public class RealTimeChart  implements OnChartGestureListener {
         mChart.postInvalidate();
     }
 
-    synchronized public void addData(ArrayList<Float> values, float moveXto) {
+    synchronized public void addData(ArrayList<Float> values, float moveXto, boolean isEvent) {
         LineData data = mChart.getData();
         LineDataSet set = (LineDataSet)data.getDataSetByIndex(0);
 
@@ -128,6 +137,9 @@ public class RealTimeChart  implements OnChartGestureListener {
             data.addEntry(new Entry(set.getEntryCount(), value), 0);
         }
 
+        if (isEvent) {
+            data.addEntry(new Entry(set.getEntryCount(), values.get(0)), 1);
+        }
 
         mChart.moveViewToX(moveXto);
 
@@ -149,6 +161,22 @@ public class RealTimeChart  implements OnChartGestureListener {
         set.setLineWidth(CHART_WIDTH);
         //set.setDrawCircleHole(true);
         set.setValueTextSize(12f);
+        //set.setFillAlpha(65);
+        //set.setFillColor(Color.GREEN);
+        return set;
+    }
+
+    private LineDataSet createEventSet() {
+        LineDataSet set = new LineDataSet(null, "y = sin(x)");
+        //set.enableDashedLine(10f, 5f, 0f);
+        set.setColor(Color.BLACK);
+        set.setCircleColor(Color.RED);
+        set.setDrawCircles(true);
+        set.setCircleRadius(10f);
+        set.setDrawFilled(false);
+        //set.setLineWidth(CHART_WIDTH);
+        set.setDrawCircleHole(true);
+        //set.setValueTextSize(12f);
         //set.setFillAlpha(65);
         //set.setFillColor(Color.GREEN);
         return set;
