@@ -49,7 +49,11 @@ public class ChartAdapter {
                 Log.i(ChartAdapter.class.getSimpleName(), Float.toString(data.get(0)));
                 isEvent = true;
             }
-            chart.addData(new ArrayList<Float>(data), moveXto, isEvent);
+            if (data.size() > 0)
+                Log.i(ChartAdapter.class.getSimpleName(), String.valueOf(data.size()));
+            synchronized (ChartAdapter.this) {
+                chart.addData(new ArrayList<Float>(data), moveXto, isEvent);
+            }
         }
     }
 
@@ -64,7 +68,7 @@ public class ChartAdapter {
     private class MoveManager implements Runnable {
         private float currentPosition, finalPosition, actualPosition;
         static final int MAXIMAL_SPEED = 10000;
-        static final int MINIMUM_SPEED = 200;
+        static final int MINIMUM_SPEED = 500;
 
         MoveManager() {
             currentPosition = actualPosition = getChartSize() - chart.VISIBLE_NUM;

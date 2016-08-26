@@ -33,6 +33,7 @@ public class MonitorActivity extends NaviagableActivity {
     LinearLayout.LayoutParams layoutParams;
     FloatingActionButton fab;
     SinDevice sinDevice;
+    BitalinoDevice bitalinoDevice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,11 +62,12 @@ public class MonitorActivity extends NaviagableActivity {
         chart.init();
 
 
-        /*bitalino = new BitalinoUniversal(this, 2);
-        startBitalinoThread = bitalino.start();*/
+        bitalino = new BitalinoUniversal(this, 0);
+        //startBitalinoThread = bitalino.start();
 
         currentChartAdapter = new ChartAdapter(chart, this);
-        sinDevice = new SinDevice(100, currentChartAdapter);
+        //sinDevice = new SinDevice(100, currentChartAdapter);
+        bitalinoDevice = new BitalinoDevice(bitalino.SAMPLE_RATE, currentChartAdapter, bitalino);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -86,6 +88,9 @@ public class MonitorActivity extends NaviagableActivity {
                 fab_state = !fab_state;
             }
         });
+
+        currentChartAdapter.push_back(0f);
+        currentChartAdapter.push_back(1f);
 
         currentChartAdapter.start();
 
@@ -149,8 +154,12 @@ public class MonitorActivity extends NaviagableActivity {
     @Override
     public void onDestroy() {
         currentChartAdapter.close();
-        sinDevice.close();
-
+        if (sinDevice != null)
+            sinDevice.close();
+        if (bitalino != null)
+            bitalino.close();
+        if (bitalinoDevice != null)
+            bitalinoDevice.close();
         super.onDestroy();
     }
 }

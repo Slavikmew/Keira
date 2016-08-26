@@ -21,8 +21,8 @@ public class RealTimeChart  implements OnChartGestureListener {
 
     private LineChart mChart;
     MonitorActivity mActivity;
-    static final float CHART_WIDTH = 4;
-    public static final int VISIBLE_NUM = 300;
+    static final float CHART_WIDTH = 2;
+    public static final int VISIBLE_NUM = 200;
 
     public RealTimeChart(MonitorActivity monitorActivity) {
         mActivity = monitorActivity;
@@ -144,8 +144,10 @@ public class RealTimeChart  implements OnChartGestureListener {
         mChart.moveViewToX(moveXto);
 
         mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
+        Log.i(RealTimeChart.class.getSimpleName(), String.valueOf(values.size()));
+
         mChart.notifyDataSetChanged();
-        //mChart.postInvalidate();
+            //mChart.postInvalidate();
     }
 
     synchronized int size() {

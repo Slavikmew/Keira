@@ -25,7 +25,7 @@ public class BitalinoUniversal {
     private MonitorActivity mActivity;
     private BITalinoDevice bitalino;
     private BluetoothSocket sock = null;
-    private static final int SAMPLE_RATE = 100;
+    public static final int SAMPLE_RATE = 100;
     private final int channel;
     public AtomicBoolean isConnected;
 
@@ -99,7 +99,7 @@ public class BitalinoUniversal {
 
     }
 
-    void stop() {
+    void close() {
         try {
             bitalino.stop();
             sock.close();
