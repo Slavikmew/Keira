@@ -32,6 +32,7 @@ public class MonitorActivity extends NaviagableActivity {
     LinearLayout EventsLayout;
     LinearLayout.LayoutParams layoutParams;
     FloatingActionButton fab;
+    SinDevice sinDevice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +65,7 @@ public class MonitorActivity extends NaviagableActivity {
         startBitalinoThread = bitalino.start();*/
 
         currentChartAdapter = new ChartAdapter(chart, this);
-        SinDevice sinDevice = new SinDevice(100, currentChartAdapter);
+        sinDevice = new SinDevice(100, currentChartAdapter);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -144,4 +145,13 @@ public class MonitorActivity extends NaviagableActivity {
 
         EventsLayout.addView(button, layoutParams);
     }
+
+    @Override
+    public void onDestroy() {
+        currentChartAdapter.close();
+        sinDevice.close();
+
+        super.onDestroy();
+    }
 }
+

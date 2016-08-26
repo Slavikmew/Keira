@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ChartAdapter {
     private RealTimeChart chart;
     public static final int FPS = 60;
-    Thread changeChartThread;
+    Thread changeChartThread, moveThread;
     MonitorActivity UIThreadActivity;
     ArrayList<Float> updateData;
     MoveManager moveManager;
@@ -63,7 +63,7 @@ public class ChartAdapter {
 
     private class MoveManager implements Runnable {
         private float currentPosition, finalPosition, actualPosition;
-        static final int MAXIMAL_SPEED = 1000;
+        static final int MAXIMAL_SPEED = 10000;
         static final int MINIMUM_SPEED = 200;
 
         MoveManager() {
@@ -150,8 +150,14 @@ public class ChartAdapter {
     }
 
     public void start() {
-        new Thread(moveManager).start();
+        moveThread = new Thread(moveManager);
         changeChartThread = new Thread(new FPSChanger());
         changeChartThread.start();
+        moveThread.start();
+    }
+
+    public void close() {
+        changeChartThread.interrupt();
+        moveThread.interrupt();
     }
 }

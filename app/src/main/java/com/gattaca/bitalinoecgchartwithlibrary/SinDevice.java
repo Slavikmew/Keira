@@ -32,4 +32,7 @@ public class SinDevice {
         collectingDataThread.start();
     }
 
+    public void close() {
+        collectingDataThread.interrupt();
+    }
 }
