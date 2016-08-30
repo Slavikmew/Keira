@@ -23,15 +23,20 @@ public class RealTimeChart  implements OnChartGestureListener {
     MonitorActivity mActivity;
     static final float CHART_WIDTH = 2;
     public static final int VISIBLE_NUM = 200;
+    int currentChartSize;
+    boolean enable;
 
-    public RealTimeChart(MonitorActivity monitorActivity) {
+    public RealTimeChart(MonitorActivity monitorActivity, boolean initEnable) {
         mActivity = monitorActivity;
+        enable = initEnable;
     }
 
-    public void init() {
+    public void init(boolean second) {
 
-        mChart = (LineChart)mActivity.findViewById(R.id.chart);
-
+        if (second)
+            mChart = (LineChart)mActivity.findViewById(R.id.chart2);
+        else
+            mChart = (LineChart)mActivity.findViewById(R.id.chart);
         mChart.setDescription("");
         mChart.setNoDataTextDescription("You need to provide data for the chart.");
 
@@ -99,7 +104,11 @@ public class RealTimeChart  implements OnChartGestureListener {
         data.addDataSet(createEventSet());
     }
 
-    synchronized public void addData(float value, boolean isRealTime) {
+    synchronized public void set_enable(boolean newValue) {
+        enable = newValue;
+    }
+
+    synchronized public void addData(float value) {
         LineData data = mChart.getData();
         LineDataSet set = (LineDataSet)data.getDataSetByIndex(0);
 
@@ -112,10 +121,8 @@ public class RealTimeChart  implements OnChartGestureListener {
         }*/
 
         data.addEntry(new Entry(set.getEntryCount(), value), 0);
+        mChart.moveViewToX(set.getEntryCount() - VISIBLE_NUM);
 
-        if (!isRealTime) {
-            mChart.moveViewToX(set.getEntryCount() - VISIBLE_NUM);
-        }
         mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
         mChart.notifyDataSetChanged();
         mChart.postInvalidate();
@@ -141,13 +148,48 @@ public class RealTimeChart  implements OnChartGestureListener {
             data.addEntry(new Entry(set.getEntryCount(), values.get(0)), 1);
         }
 
-        mChart.moveViewToX(moveXto);
+        if (enable) {
+            mChart.moveViewToX(moveXto);
 
-        mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
-        Log.i(RealTimeChart.class.getSimpleName(), String.valueOf(values.size()));
+            mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
+            //Log.i(RealTimeChart.class.getSimpleName(), String.valueOf(values.size()));
 
-        mChart.notifyDataSetChanged();
+            mChart.notifyDataSetChanged();
+        }
             //mChart.postInvalidate();
+    }
+
+    synchronized public void updateData(ArrayList<Float> values, boolean isEvent) {
+        LineData data = mChart.getData();
+        LineDataSet set = (LineDataSet)data.getDataSetByIndex(0);
+
+        /*if(set.getEntryCount() == VISIBLE_NUM) {
+            set.removeFirst();
+
+            for (Entry entry : set.getValues()) {
+                entry.setX(entry.getX() - 1);
+            }
+        }*/
+
+        for (int i = 0; i < values.size(); ++i) {
+            Float value = values.get(i);
+            data.addEntry(new Entry(currentChartSize + i, value), 0);
+        }
+        while (set.getEntryCount() > 2 * VISIBLE_NUM) {
+            set.removeFirst();
+        }
+        if (isEvent) {
+            data.addEntry(new Entry(currentChartSize, values.get(0)), 1);
+        }
+        currentChartSize += values.size();
+
+        if (enable) {
+            mChart.moveViewToX(Float.MAX_VALUE);
+            mChart.setVisibleXRange(VISIBLE_NUM, VISIBLE_NUM);
+            //Log.i(RealTimeChart.class.getSimpleName(), String.valueOf(values.size()));
+            mChart.notifyDataSetChanged();
+        }
+        //mChart.postInvalidate();
     }
 
     synchronized int size() {

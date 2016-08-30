@@ -5,23 +5,26 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by vadub on 18.08.2016.
  */
-public class ChartAdapter {
+public class ChartAdapter implements DataReceiver {
     private RealTimeChart chart;
     public static final int FPS = 60;
     Thread changeChartThread, moveThread;
-    MonitorActivity UIThreadActivity;
-    ArrayList<Float> updateData;
+    public BlockingQueue<Float> updateData;
     MoveManager moveManager;
     Random myRandom;
+    MonitorActivity UIThreadActivity;
 
     ChartAdapter(RealTimeChart realTimeChart, MonitorActivity activity) {
         chart = realTimeChart;
-        updateData = new ArrayList<Float>();
+        updateData = new LinkedBlockingQueue<Float>();
         UIThreadActivity = activity;
         moveManager = new MoveManager();
         myRandom = new Random(171717);
@@ -31,12 +34,15 @@ public class ChartAdapter {
         ArrayList<Float> data;
         float moveXto;
 
-        UpdateRunnable(ArrayList<Float> currentData, float MoveXto) {
+        UpdateRunnable(BlockingQueue<Float> queue, float MoveXto) {
             data = new ArrayList<Float>();
-            for (Float item: currentData) {
-                if (item != null) {
-                    data.add(item);
-                }
+            while (!queue.isEmpty()) {
+                try {
+                    Float item = queue.take();
+                    if (item != null) {
+                        data.add(item);
+                    }
+                } catch (InterruptedException e) {}
             }
             moveXto = MoveXto;
         }
@@ -52,12 +58,12 @@ public class ChartAdapter {
             if (data.size() > 0)
                 Log.i(ChartAdapter.class.getSimpleName(), String.valueOf(data.size()));
             synchronized (ChartAdapter.this) {
-                chart.addData(new ArrayList<Float>(data), moveXto, isEvent);
+                chart.updateData(new ArrayList<Float>(data), isEvent);
             }
         }
     }
 
-    synchronized public void push_back(Float value) {
+    synchronized public void receive(float value) {
         updateData.add(value);
     }
 
@@ -68,7 +74,7 @@ public class ChartAdapter {
     private class MoveManager implements Runnable {
         private float currentPosition, finalPosition, actualPosition;
         static final int MAXIMAL_SPEED = 10000;
-        static final int MINIMUM_SPEED = 500;
+        static final int MINIMUM_SPEED = 700;
 
         MoveManager() {
             currentPosition = actualPosition = getChartSize() - chart.VISIBLE_NUM;

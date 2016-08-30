@@ -2,6 +2,8 @@ package com.gattaca.bitalinoecgchartwithlibrary;
 
 import android.util.Log;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by vadub on 26.08.2016.
  */
@@ -28,7 +30,12 @@ public class BitalinoDevice {
                 } catch (InterruptedException e) {}
                 if (bitalino.isConnected.get()) {
                     while (true) {
-                        chartAdapter.push_back((float) bitalino.get().get());
+                        try {
+                            long time = System.nanoTime();
+                            chartAdapter.updateData.put((float) bitalino.get().get());
+                            Log.i(BitalinoDevice.class.getSimpleName(), String.valueOf(System.nanoTime() - time));
+
+                        } catch (InterruptedException e) {}
                     }
                 } else {
                     Log.i(BitalinoDevice.class.getSimpleName(), "Cant connect to Bitalino!!");

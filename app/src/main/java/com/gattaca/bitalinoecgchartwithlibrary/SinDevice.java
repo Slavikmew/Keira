@@ -12,17 +12,17 @@ public class SinDevice {
     public static final int period = 100;
 
     private Thread collectingDataThread;
-    private ChartAdapter chartAdapter;
+    private DataReceiver chartAdapter;
 
-    SinDevice(int initFrequency, ChartAdapter initChartAdapter) {
-        chartAdapter = initChartAdapter;
+    SinDevice(int initFrequency, DataReceiver initDataReceiver) {
+        chartAdapter = initDataReceiver;
         frequency = initFrequency;
         collectingDataThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 int currentAlpha = 0;
                 while(true) {
-                    chartAdapter.push_back((float)Math.sin(2 * Math.PI * currentAlpha / period));
+                    chartAdapter.receive((float)Math.sin(2 * Math.PI * currentAlpha / period));
                     currentAlpha++;
                     currentAlpha %= period;
                     EffectiveSleep.sleepNanoseconds(1000000000 / frequency);
