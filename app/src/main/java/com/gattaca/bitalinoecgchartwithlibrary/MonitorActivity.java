@@ -4,27 +4,28 @@ import android.support.design.widget.FloatingActionButton;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ViewSwitcher;
 
 import com.gattaca.bitalinoecgchartwithlibrary.navigation.NaviagableActivity;
 
 public class MonitorActivity extends NaviagableActivity {
 
-    RealTimeChart staticChart;
     BitalinoUniversal bitalino = null;
     Thread startBitalinoThread = null;
-    static final int PERIOD = 100;
     static final String TAG = MonitorActivity.class.getSimpleName();
     boolean fab_state;
-    ChartAdapter staticChartAdapter;
+    ChartAdapter chartsAdapter;
     public EventsAdapter eventsAdapter;
     LinearLayout EventsLayout;
     LinearLayout.LayoutParams layoutParams;
     FloatingActionButton fab;
     SinDevice sinDevice;
     BitalinoDevice bitalinoDevice;
-    RealTimeChart dynamicChart;
+    RealTimeChart staticChart, dynamicChart;
     ChartsManager chartsManager;
 
     @Override
@@ -45,25 +46,27 @@ public class MonitorActivity extends NaviagableActivity {
         setSupportActionBar(toolbar);
         onCreateToolbar(toolbar);
 
-
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         staticChart = new RealTimeChart(this, false);
         dynamicChart = new RealTimeChart(this, true);
 
+
         eventsAdapter = new EventsAdapter(this);
 
-        staticChart.init(false);
-        dynamicChart.init(true);
+        staticChart.init();
+        dynamicChart.init();
 
         bitalino = new BitalinoUniversal(this, 0);
         //startBitalinoThread = bitalino.start();
 
-        staticChartAdapter = new ChartAdapter(staticChart, this);
+        chartsAdapter = new ChartAdapter(staticChart, dynamicChart, this);
 
-        chartsManager = new ChartsManager(staticChart, dynamicChart, staticChartAdapter);
-        sinDevice = new SinDevice(100, staticChartAdapter);
-        //bitalinoDevice = new BitalinoDevice(bitalino.SAMPLE_RATE, staticChartAdapter, bitalino);
+        ViewSwitcher chartSwitcher = (ViewSwitcher)this.findViewById(R.id.chart_switcher);
+        chartsManager = new ChartsManager(this, chartsAdapter, chartSwitcher);
+
+        sinDevice = new SinDevice(100, chartsAdapter);
+        //bitalinoDevice = new BitalinoDevice(bitalino.SAMPLE_RATE, chartsAdapter, bitalino);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -75,19 +78,21 @@ public class MonitorActivity extends NaviagableActivity {
             @Override
             public void onClick(View view) {
                 if (!fab_state) {
-                    staticChartAdapter.moveRealTime();
+                    chartsAdapter.moveRealTime();
+                    chartsManager.setState(ChartsManager.REAL_TIME);
                     fab.setImageDrawable(getDrawable(R.drawable.pause));
                 } else {
-                    staticChartAdapter.pause();
+                    chartsAdapter.pause();
+                    chartsManager.setState(ChartsManager.PAUSE);
                     fab.setImageDrawable(getDrawable(R.drawable.play));
                 }
                 fab_state = !fab_state;
             }
         });
 
-        staticChartAdapter.receive(0f);
+        chartsAdapter.receive(0f);
 
-        staticChartAdapter.start();
+        chartsAdapter.start();
 
         /*Thread realTimeThread = new Thread(new Runnable() {
             SimpleECG currentECG = null;
@@ -137,8 +142,9 @@ public class MonitorActivity extends NaviagableActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                staticChartAdapter.move(eventsAdapter.get_event(view.getId()) - staticChart.VISIBLE_NUM / 2);
+                chartsAdapter.move(eventsAdapter.get_event(view.getId()) - staticChart.VISIBLE_NUM / 2);
                 chartsManager.setState(chartsManager.SCROLL);
+
                 fab_state = false;
                 fab.setImageDrawable(getDrawable(R.drawable.play));
             }
@@ -149,7 +155,7 @@ public class MonitorActivity extends NaviagableActivity {
 
     @Override
     public void onDestroy() {
-        staticChartAdapter.close();
+        chartsAdapter.close();
         if (sinDevice != null)
             sinDevice.close();
         if (bitalino != null)

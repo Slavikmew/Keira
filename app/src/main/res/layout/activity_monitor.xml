@@ -19,13 +19,28 @@ tools:context=".MonitorActivity">
         app:contentScrim="@color/colorForGraphicBackground"
         app:theme="@style/MonitorToolbarTheme">
 
-        <com.github.mikephil.charting.charts.LineChart
-            android:id="@+id/chart"
+        <ViewSwitcher
+            android:id="@+id/chart_switcher"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/chart_height"
-            app:layout_scrollFlags="scroll|enterAlways"
-            app:layout_collapseMode="parallax"
-            />
+            android:layout_height="wrap_content" >
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/static_chart"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/chart_height"
+                app:layout_scrollFlags="scroll|enterAlways"
+                app:layout_collapseMode="parallax"
+                />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/dynamic_chart"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/chart_height"
+                app:layout_scrollFlags="scroll|enterAlways"
+                app:layout_collapseMode="parallax"
+                />
+
+        </ViewSwitcher>
 
         <android.support.v7.widget.Toolbar
 

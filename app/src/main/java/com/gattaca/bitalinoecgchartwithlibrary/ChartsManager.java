@@ -1,5 +1,9 @@
 package com.gattaca.bitalinoecgchartwithlibrary;
 
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.ViewSwitcher;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,19 +11,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by vadub on 30.08.2016.
  */
-public class ChartsManager implements DataReceiver {
+public class ChartsManager {
     public static final int REAL_TIME = 0;
     public static final int PAUSE = 1;
     public static final int SCROLL = 2;
-    RealTimeChart staticChart, dynamicChart;
-    ChartAdapter staticChartAdapter;
+    ChartAdapter chartAdapter;
+    ViewSwitcher chartSwitcher;
     private AtomicInteger state;
+    MonitorActivity monitorActivity;
 
-    ChartsManager(RealTimeChart initStaticChart, RealTimeChart initDynamicChart, ChartAdapter initStaticChartAdapter) {
-        staticChart = initStaticChart;
-        dynamicChart = initDynamicChart;
-        staticChartAdapter = initStaticChartAdapter;
+    ChartsManager(MonitorActivity initMonitorActivity, ChartAdapter initChartAdapter, ViewSwitcher initChartSwitcher) {
+        monitorActivity = initMonitorActivity;
+        chartAdapter = initChartAdapter;
+        chartSwitcher = initChartSwitcher;
+
+        Animation inAnim = new AlphaAnimation(0, 1);
+        inAnim.setDuration(400);
+        Animation outAnim = new AlphaAnimation(1, 0);
+        outAnim.setDuration(400);
+
+        chartSwitcher.setInAnimation(inAnim);
+        chartSwitcher.setOutAnimation(outAnim);
+
         state = new AtomicInteger(0);
+
+        chartSwitcher.showNext();
     }
 
     public int getState() {
@@ -29,27 +45,43 @@ public class ChartsManager implements DataReceiver {
     public void setState(int newState) {
         switch (newState) {
             case PAUSE:
+                if (getState() == REAL_TIME) {
+                    monitorActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            chartSwitcher.showNext();
+                        }
+                    });
+                }
                 state.set(PAUSE);
-                staticChart.set_enable(true);
-                dynamicChart.set_enable(false);
+                chartAdapter.toStatic();
                 break;
             case SCROLL:
+                if (getState() == REAL_TIME) {
+                    monitorActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            chartSwitcher.showNext();
+                        }
+                    });
+                }
                 state.set(SCROLL);
-                staticChart.set_enable(true);
-                dynamicChart.set_enable(false);
+                chartAdapter.toStatic();
                 break;
             case REAL_TIME:
+                if (getState() != REAL_TIME) {
+                    monitorActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            chartSwitcher.showNext();
+                        }
+                    });
+                }
                 state.set(REAL_TIME);
-                staticChart.set_enable(false);
-                dynamicChart.set_enable(true);
+                chartAdapter.toDynamic();
                 break;
         }
     }
 
-    public void receive(float value) {
-        staticChartAdapter.receive(value);
-        ArrayList<Float> local = new ArrayList<Float>();
-        local.add(value);
-        dynamicChart.updateData(local, false); // TODO Разобраться с событиями
-    }
+
 }

@@ -29,14 +29,15 @@ public class RealTimeChart  implements OnChartGestureListener {
     public RealTimeChart(MonitorActivity monitorActivity, boolean initEnable) {
         mActivity = monitorActivity;
         enable = initEnable;
+        if (!initEnable) {
+            mChart = (LineChart)mActivity.findViewById(R.id.static_chart);
+        } else {
+            mChart = (LineChart)mActivity.findViewById(R.id.dynamic_chart);
+        }
     }
 
-    public void init(boolean second) {
+    public void init() {
 
-        if (second)
-            mChart = (LineChart)mActivity.findViewById(R.id.chart2);
-        else
-            mChart = (LineChart)mActivity.findViewById(R.id.chart);
         mChart.setDescription("");
         mChart.setNoDataTextDescription("You need to provide data for the chart.");
 
@@ -63,7 +64,8 @@ public class RealTimeChart  implements OnChartGestureListener {
 
         mChart.setBackgroundColor(Color.WHITE);
 
-       /*Bitmap bm = BitmapFactory.decodeResource(mActivity.getResources(), R.drawable.net_upper_gradient);
+        //mChart.setDrawMarkerViews(false);
+        /*Bitmap bm = BitmapFactory.decodeResource(mActivity.getResources(), R.drawable.net_upper_gradient);
         Drawable background = new BitmapDrawable(mActivity.getResources(), bm);
         mChart.setBackground(background);*/
 
@@ -102,6 +104,7 @@ public class RealTimeChart  implements OnChartGestureListener {
         //mChart.setEnabled(false);
         data.addDataSet(createSet());
         data.addDataSet(createEventSet());
+        data.setDrawValues(false);
     }
 
     synchronized public void set_enable(boolean newValue) {

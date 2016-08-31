@@ -1,29 +1,29 @@
 package com.gattaca.bitalinoecgchartwithlibrary;
 
-import android.app.Activity;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by vadub on 18.08.2016.
  */
 public class ChartAdapter implements DataReceiver {
-    private RealTimeChart chart;
     public static final int FPS = 60;
+
+    private RealTimeChart staticChart, dynamicChart;
     Thread changeChartThread, moveThread;
     public BlockingQueue<Float> updateData;
+
     MoveManager moveManager;
     Random myRandom;
     MonitorActivity UIThreadActivity;
 
-    ChartAdapter(RealTimeChart realTimeChart, MonitorActivity activity) {
-        chart = realTimeChart;
+    ChartAdapter(RealTimeChart initStaticChart, RealTimeChart initDynamicChart, MonitorActivity activity) {
+        staticChart = initStaticChart;
+        dynamicChart = initDynamicChart;
         updateData = new LinkedBlockingQueue<Float>();
         UIThreadActivity = activity;
         moveManager = new MoveManager();
@@ -58,17 +58,27 @@ public class ChartAdapter implements DataReceiver {
             if (data.size() > 0)
                 Log.i(ChartAdapter.class.getSimpleName(), String.valueOf(data.size()));
             synchronized (ChartAdapter.this) {
-                chart.updateData(new ArrayList<Float>(data), isEvent);
+                staticChart.addData(new ArrayList<Float>(data), moveXto, isEvent);
+                dynamicChart.updateData(new ArrayList<Float>(data), isEvent);
             }
         }
     }
 
+    public void toDynamic() {
+        dynamicChart.set_enable(true);
+        staticChart.set_enable(false);
+    }
+
+    public void toStatic() {
+        dynamicChart.set_enable(false);
+        staticChart.set_enable(true);
+    }
     synchronized public void receive(float value) {
         updateData.add(value);
     }
 
     int getChartSize() {
-        return chart.size();
+        return staticChart.size();
     }
 
     private class MoveManager implements Runnable {
@@ -77,7 +87,7 @@ public class ChartAdapter implements DataReceiver {
         static final int MINIMUM_SPEED = 700;
 
         MoveManager() {
-            currentPosition = actualPosition = getChartSize() - chart.VISIBLE_NUM;
+            currentPosition = actualPosition = getChartSize() - staticChart.VISIBLE_NUM;
             finalPosition = Float.MAX_VALUE;
         }
 
@@ -111,7 +121,7 @@ public class ChartAdapter implements DataReceiver {
             while(true) {
                 long distance = 0;
                 synchronized (this) {
-                    if (Math.abs(currentPosition - Math.min(finalPosition, chart.size() - chart.VISIBLE_NUM)) > 1e-9) {
+                    if (Math.abs(currentPosition - Math.min(finalPosition, staticChart.size() - staticChart.VISIBLE_NUM)) > 1e-9) {
                         if (currentPosition < Math.min(finalPosition, actualPosition)) {
                             currentPosition = Math.min(finalPosition, actualPosition);
                         }
@@ -124,7 +134,7 @@ public class ChartAdapter implements DataReceiver {
                             currentPosition--;
                         }
                     }
-                    distance = (long) Math.abs(currentPosition - Math.min(finalPosition, chart.size() - chart.VISIBLE_NUM));
+                    distance = (long) Math.abs(currentPosition - Math.min(finalPosition, staticChart.size() - staticChart.VISIBLE_NUM));
                 }
                 EffectiveSleep.sleepNanoseconds(1000000000 / Math.max(MINIMUM_SPEED, Math.min(MAXIMAL_SPEED, distance)));
             }
